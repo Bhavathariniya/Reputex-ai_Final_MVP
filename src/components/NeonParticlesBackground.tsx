@@ -13,19 +13,14 @@ interface Particle {
 
 const NeonParticlesBackground: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Calm, on-brand palette: gold (trust), cyan (tech), muted slate.
-  const colors = ['#F59E0B', '#22D3EE', '#94A3B8', '#FBBF24'];
-
+  
+  // Neon color palette - matching the existing color palette from the app
+  const colors = ['#00FFFF', '#FF00FF', '#8A2BE2', '#1E90FF', '#FF1493'];
+  
   useEffect(() => {
-    // Respect users who prefer reduced motion — render nothing.
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return;
-    }
-
     const canvas = canvasRef.current;
     if (!canvas) return;
-
+    
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
@@ -43,8 +38,8 @@ const NeonParticlesBackground: React.FC = () => {
     
     // Particles array
     const particles: Particle[] = [];
-    const particleCount = 220;
-
+    const particleCount = 1500;
+    
     // Create particles
     const createParticles = () => {
       for (let i = 0; i < particleCount; i++) {
@@ -52,25 +47,25 @@ const NeonParticlesBackground: React.FC = () => {
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
           z: Math.random() * 1000,
-          size: Math.random() * 1.4 + 0.4,
-          speed: Math.random() * 0.4 + 0.15,
+          size: Math.random() * 2 + 0.5,
+          speed: Math.random() * 0.5 + 0.2,
           color: colors[Math.floor(Math.random() * colors.length)],
-          alpha: Math.random() * 0.22 + 0.06
+          alpha: Math.random() * 0.5 + 0.5
         });
       }
     };
-
+    
     createParticles();
-
+    
     // Animation properties
-    let warpSpeed = 0.32;
+    let warpSpeed = 0.7;
     let centerX = canvas.width / 2;
     let centerY = canvas.height / 2;
     
     // Animation loop
     const animate = () => {
-      // Trailing fade in deep navy to match the theme background.
-      ctx.fillStyle = 'rgba(9, 13, 23, 0.30)';
+      // Create a radial gradient for fade effect
+      ctx.fillStyle = 'rgba(10, 10, 25, 0.2)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
       // Update center point on resize

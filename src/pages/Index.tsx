@@ -9,7 +9,7 @@ import AnalysisReport from '@/components/AnalysisReport';
 import TokenStats from '@/components/TokenStats';
 import TutorialFAQ from '@/components/TutorialFAQ';
 import { toast } from 'sonner';
-import { Volume2, VolumeX, Shield, Lock, Layers, Zap, CheckCircle } from 'lucide-react';
+import { Volume2, VolumeX, Shield } from 'lucide-react';
 import { analyzeAddress } from '@/lib/reputexApi';
 
 const Index = () => {
@@ -115,34 +115,19 @@ const Index = () => {
       
       <main className="flex-grow pt-32 pb-16 px-4 container mx-auto relative z-10">
         <section className="mb-12 text-center">
-          <div className="mb-6 flex justify-center">
-            <span className="pill border-primary/30 bg-primary/10 text-primary">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              Multi-chain security intelligence
-            </span>
+          <div className="shield-logo mx-auto mb-6 w-20 h-20 flex items-center justify-center">
+            <Shield className="w-16 h-16 text-neon-cyan" />
           </div>
 
-          <div className="shield-logo mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5">
-            <Shield className="h-11 w-11 text-primary" />
-          </div>
-
-          <h1 className="mb-4 text-4xl font-bold md:text-5xl lg:text-6xl">
-            Know before you <span className="neon-text">ape in.</span>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 animate-float">
+            <span className="neon-text">ReputeX AI</span>
           </h1>
 
-          <p className="tagline">
-            Paste any token address and get an honest, evidence-based trust score in seconds —
-            honeypot checks, contract security, liquidity and holder risk, all in one verdict.
+          <p className="tagline max-w-2xl mx-auto">
+            Web3's Multi-Chain AI-Powered Reputation Shield – Detect Scams & Invest Fearlessly Across All Major Blockchains.
           </p>
 
           <AddressInput onSubmit={handleSubmit} isLoading={isLoading || isAutoDetecting} />
-
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><Lock className="h-3.5 w-3.5 text-primary" /> Honeypot detection</span>
-            <span className="inline-flex items-center gap-1.5"><Layers className="h-3.5 w-3.5 text-primary" /> 8 EVM chains</span>
-            <span className="inline-flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-primary" /> No wallet connect</span>
-            <span className="inline-flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary" /> Free to scan</span>
-          </div>
         </section>
         
         <section className="container mx-auto">
