@@ -9,19 +9,8 @@ import AnalysisReport from '@/components/AnalysisReport';
 import TokenStats from '@/components/TokenStats';
 import TutorialFAQ from '@/components/TutorialFAQ';
 import { toast } from 'sonner';
-import { Volume2, VolumeX, Shield } from 'lucide-react';
-import {
-  getWalletTransactions,
-  getTokenData,
-  getRepoActivity,
-  getAIAnalysis,
-  checkBlockchainForScore,
-  storeScoreOnBlockchain,
-  getSocialSentiment,
-  detectScamIndicators,
-  analyzeEthereumToken,
-} from '@/lib/api-client';
-import { isContract, detectBlockchain } from '@/lib/chain-detection';
+import { Volume2, VolumeX, Shield, Lock, Layers, Zap, CheckCircle } from 'lucide-react';
+import { analyzeAddress } from '@/lib/reputexApi';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -47,189 +36,35 @@ const Index = () => {
     }
   }, [location]);
 
-  const autoDetectNetwork = async (address: string): Promise<string> => {
-    setIsAutoDetecting(true);
-    try {
-      toast.info("Detecting blockchain network...");
-      const detectedNetwork = await detectBlockchain(address);
-      if (detectedNetwork) {
-        toast.success(`Detected network: ${detectedNetwork}`);
-        return detectedNetwork;
-      } else {
-        toast.warning("Could not detect network. Defaulting to Ethereum.");
-        return 'ethereum';
-      }
-    } catch (error) {
-      console.error("Error detecting network:", error);
-      toast.error("Network detection failed. Defaulting to Ethereum.");
-      return 'ethereum';
-    } finally {
-      setIsAutoDetecting(false);
-    }
-  };
-
   const handleAddressSearch = async (address: string, network: string) => {
     setIsLoading(true);
     setAnalysis(null);
-    
-    // Auto-detect network if set to 'auto'
-    let resolvedNetwork = network;
-    if (network === 'auto') {
-      resolvedNetwork = await autoDetectNetwork(address);
-    }
-    
+
     try {
-      // First check if we already have this score on the blockchain
-      const existingScoreResponse = await checkBlockchainForScore(address, resolvedNetwork);
-      
-      if (existingScoreResponse.success && existingScoreResponse.data) {
-        // Use existing score
-        setAnalysis(existingScoreResponse.data);
-        toast.success('Retrieved existing analysis from blockchain');
-        setIsLoading(false);
-        
-        // Set the address type based on the stored data
-        setAddressType(existingScoreResponse.data.address_type || null);
-        return;
-      }
-      
-      // If Ethereum network, try using our enhanced Etherscan analyzer for tokens
-      if (resolvedNetwork === 'ethereum') {
-        try {
-          const ethAnalysisResponse = await analyzeEthereumToken(address);
-          
-          if (ethAnalysisResponse.success && ethAnalysisResponse.data) {
-            // Extract token overview data
-            const tokenOverview = ethAnalysisResponse.data.tokenOverview;
-            const rugPullRisk = ethAnalysisResponse.data.rugPullRisk;
-            const walletReputation = ethAnalysisResponse.data.walletReputation;
-            const sybilRisk = ethAnalysisResponse.data.sybilAttack;
-            
-            // Convert to our expected format
-            const enhancedData = {
-              trust_score: Math.max(0, 100 - rugPullRisk.score),
-              developer_score: walletReputation.score,
-              liquidity_score: ethAnalysisResponse.data.contractVulnerability.liquidityLocked ? 85 : 45,
-              community_score: Math.max(0, 100 - sybilRisk.score),
-              holder_distribution: 70, // Simplified
-              fraud_risk: rugPullRisk.score,
-              social_sentiment: 70, // Simplified
-              
-              // Add analysis text
-              analysis: `${tokenOverview.name} (${tokenOverview.symbol}) was analyzed with an overall risk assessment of ${rugPullRisk.level}. The contract was created on ${new Date(tokenOverview.creationTime).toLocaleDateString()} by address ${tokenOverview.deployer}. ${rugPullRisk.indicators.length > 0 ? `${rugPullRisk.indicators.length} risky functions were identified in the contract.` : 'No significant risk indicators were found in the contract code.'} ${ethAnalysisResponse.data.honeypotCheck.isHoneypot ? 'WARNING: This token shows characteristics of a potential honeypot.' : ''} ${ethAnalysisResponse.data.contractVulnerability.liquidityLocked ? 'The liquidity appears to be locked, which is positive for security.' : 'No evidence of locked liquidity was found, which could present a potential risk.'}`,
-              
-              // Add token type data
-              address_type: 'contract',
-              network: resolvedNetwork,
-              timestamp: new Date().toISOString(),
-              
-              // Add sentiment and scam indicators
-              scam_indicators: rugPullRisk.indicators.map((ind: any) => ({
-                label: ind.term,
-                description: ind.risk
-              })),
-              sentiment_data: {
-                sentiment: rugPullRisk.score > 70 ? 'negative' : rugPullRisk.score > 30 ? 'mixed' : 'positive',
-                keywords: ['token', 'contract', 'analysis'],
-                phrases: [
-                  rugPullRisk.score > 70 ? 'High risk contract with multiple concerns' : 
-                  rugPullRisk.score > 30 ? 'Some risk factors present in this contract' : 
-                  'Contract appears relatively safe based on analysis'
-                ]
-              }
-            };
-            
-            // Store the analysis result
-            setAnalysis(enhancedData);
-            setAddressType('contract');
-            
-            // Store on blockchain
-            await storeScoreOnBlockchain(address, enhancedData);
-            
-            toast.success(`Enhanced Ethereum contract analysis complete`);
-            setIsLoading(false);
-            return;
-          }
-        } catch (ethError) {
-          console.error('Error in Ethereum analysis:', ethError);
-          // Continue with fallback analysis
-        }
-      }
-      
-      // If no existing score or Ethereum analysis, perform traditional analysis
-      // First determine if this is a contract or wallet
-      const isContractAddress = await isContract(address, resolvedNetwork);
-      setAddressType(isContractAddress ? 'contract' : 'wallet');
-      
-      // Fetch wallet transaction data
-      const walletData = await getWalletTransactions(address);
-      
-      // Fetch token data (if it's a contract)
-      const tokenData = await getTokenData(address);
-      
-      // Simulate GitHub repo activity (relevant mainly for contracts/tokens)
-      const repoData = await getRepoActivity("example/repo");
-      
-      // Get social sentiment data
-      const sentimentData = await getSocialSentiment(address, resolvedNetwork);
-      
-      // Detect scam indicators
-      const scamData = await detectScamIndicators(address, tokenData.data, resolvedNetwork);
-      
-      // Aggregate the data
-      const aggregatedData = {
-        network: resolvedNetwork,
-        address_type: isContractAddress ? 'contract' : 'wallet',
-        community_size: "Medium", // Simulated community size
-      };
-      
-      if (walletData.success && walletData.data) {
-        Object.assign(aggregatedData, walletData.data);
-      }
-      
-      if (tokenData.success && tokenData.data) {
-        Object.assign(aggregatedData, tokenData.data);
-      }
-      
-      if (repoData.success && repoData.data) {
-        Object.assign(aggregatedData, repoData.data);
-      }
-      
-      if (sentimentData.success && sentimentData.data) {
-        Object.assign(aggregatedData, sentimentData.data);
-      }
-      
-      if (scamData.success && scamData.data) {
-        Object.assign(aggregatedData, scamData.data);
-      }
-      
-      // Get enhanced AI analysis
-      const aiAnalysisResponse = await getAIAnalysis(aggregatedData);
-      
-      if (aiAnalysisResponse.success && aiAnalysisResponse.data) {
-        // Prepare the final analysis data with all scores and indicators
-        const enhancedData = {
-          ...aiAnalysisResponse.data,
-          network: resolvedNetwork,
-          address_type: isContractAddress ? 'contract' : 'wallet',
-          sentimentData: aiAnalysisResponse.data.sentiment_data,
-          scamIndicators: aiAnalysisResponse.data.scam_indicators,
-        };
-        
-        // Store the analysis result
-        setAnalysis(enhancedData);
-        
-        // Store on blockchain
-        await storeScoreOnBlockchain(address, enhancedData);
-        
-        const addressTypeText = isContractAddress ? 'contract' : 'wallet';
-        toast.success(`Enhanced analysis complete for ${resolvedNetwork} ${addressTypeText}`);
-      } else {
-        toast.error('Failed to analyze address');
-      }
+      // Single call to the ReputeX backend — genuine deterministic scoring.
+      // The backend auto-detects the network and contract/wallet type.
+      const result = await analyzeAddress(address, network || 'auto');
+
+      setSearchedNetwork(result.network);
+      setAddressType(result.addressType === 'unknown' ? null : result.addressType);
+
+      setAnalysis({
+        ...result.scores,
+        analysis: result.aiReasoning ||
+          `${result.token.name || 'This token'} scored ${result.trustScore}/100 (${result.verdict}) on ${result.network} ` +
+          `with ${Math.round(result.confidence * 100)}% data confidence.`,
+        network: result.network,
+        address_type: result.addressType,
+        timestamp: result.timestamp,
+        scamIndicators: result.riskFactors.map((f) => ({ label: 'Risk Factor', description: f })),
+      });
+
+      toast.success(`Analysis complete — ${result.verdict} (${result.trustScore}/100)`);
     } catch (error) {
       console.error('Error in analysis process:', error);
-      toast.error('Analysis failed. Please try again.');
+      toast.error('Analysis failed', {
+        description: error instanceof Error ? error.message : 'Please try again later.',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -280,19 +115,34 @@ const Index = () => {
       
       <main className="flex-grow pt-32 pb-16 px-4 container mx-auto relative z-10">
         <section className="mb-12 text-center">
-          <div className="shield-logo mx-auto mb-6 w-20 h-20 flex items-center justify-center">
-            <Shield className="w-16 h-16 text-neon-cyan" />
+          <div className="mb-6 flex justify-center">
+            <span className="pill border-primary/30 bg-primary/10 text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              Multi-chain security intelligence
+            </span>
           </div>
-          
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 animate-float">
-            <span className="neon-text">ReputeX AI</span>
+
+          <div className="shield-logo mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5">
+            <Shield className="h-11 w-11 text-primary" />
+          </div>
+
+          <h1 className="mb-4 text-4xl font-bold md:text-5xl lg:text-6xl">
+            Know before you <span className="neon-text">ape in.</span>
           </h1>
-          
-          <p className="tagline max-w-2xl mx-auto">
-            Web3's Multi-Chain AI-Powered Reputation Shield – Detect Scams & Invest Fearlessly Across All Major Blockchains.
+
+          <p className="tagline">
+            Paste any token address and get an honest, evidence-based trust score in seconds —
+            honeypot checks, contract security, liquidity and holder risk, all in one verdict.
           </p>
-          
+
           <AddressInput onSubmit={handleSubmit} isLoading={isLoading || isAutoDetecting} />
+
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5"><Lock className="h-3.5 w-3.5 text-primary" /> Honeypot detection</span>
+            <span className="inline-flex items-center gap-1.5"><Layers className="h-3.5 w-3.5 text-primary" /> 8 EVM chains</span>
+            <span className="inline-flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-primary" /> No wallet connect</span>
+            <span className="inline-flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary" /> Free to scan</span>
+          </div>
         </section>
         
         <section className="container mx-auto">

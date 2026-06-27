@@ -34,7 +34,8 @@ Browser ──HTTPS──▶  ReputeX backend  ──▶ Etherscan / honeypot.is
 | `.env` ignored in both frontend and backend `.gitignore` | ✅ Done |
 | `.env.example` templates (no real values) committed | ✅ Done |
 | Keys scrubbed from git history | ✅ Done previously (`git filter-repo`) |
-| **Rotate all 7 keys** | ⚠️ **STILL REQUIRED** — they were public on GitHub and must be considered compromised. Generate new keys, put them in `backend/.env`. |
+| Unused providers removed | ✅ Alchemy, BitQuery, LunarCrush dropped — never used. Backend now uses only **4** providers (Etherscan, Moralis, CoinGecko, Gemini); honeypot.is + Dexscreener need no key. |
+| **Rotate / revoke the leaked keys** | ⚠️ **STILL REQUIRED** — all were public on GitHub. Rotate the 4 still in use; **revoke** the 3 removed ones (Alchemy, BitQuery, LunarCrush) since they're no longer needed. |
 
 > Rotation is the one outstanding must-do. Scrubbing history and moving keys
 > server-side does not un-leak keys that were already public.

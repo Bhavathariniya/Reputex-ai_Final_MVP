@@ -1,6 +1,6 @@
 import { env } from '../config/env';
 import { httpJson } from '../lib/http';
-import { cached } from '../lib/cache';
+import { cachedIf } from '../lib/cache';
 import type { HolderInfo } from './explorer';
 
 /**
@@ -35,7 +35,7 @@ export async function getHolderConcentration(chainSlug: string, address: string)
   const chain = CHAIN_MAP[chainSlug];
   if (!chain) return { available: false };
 
-  return cached(`moralis-holders:${chainSlug}:${address}`, env.CACHE_TTL_SECONDS, async () => {
+  return cachedIf(`moralis-holders:${chainSlug}:${address}`, env.CACHE_TTL_SECONDS, (v) => v.available, async () => {
     // Primary: holder stats (one call → top10 supply % + total holders).
     const stats = await httpJson<any>(`${BASE}/erc20/${address}/holders?chain=${chain}`, { headers: headers() });
     const top10FromStats = num(stats?.holderSupply?.top10?.supplyPercent);

@@ -20,11 +20,13 @@ const schema = z.object({
 
   ETHERSCAN_API_KEY: z.string().optional(),
   MORALIS_API_KEY: z.string().optional(),
-  ALCHEMY_API_KEY: z.string().optional(),
-  BITQUERY_API_KEY: z.string().optional(),
   COINGECKO_API_KEY: z.string().optional(),
-  LUNARCRUSH_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
+
+  // Telegram bot (optional — only needed to run `npm run bot`)
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  // Public URL of the web app, used for "Open full report" buttons in the bot.
+  WEB_APP_URL: z.string().default('http://localhost:8080'),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -44,9 +46,6 @@ export const corsOrigins = env.CORS_ORIGINS.split(',')
 export const providerStatus = {
   etherscan: Boolean(env.ETHERSCAN_API_KEY),
   moralis: Boolean(env.MORALIS_API_KEY),
-  alchemy: Boolean(env.ALCHEMY_API_KEY),
-  bitquery: Boolean(env.BITQUERY_API_KEY),
   coingecko: Boolean(env.COINGECKO_API_KEY),
-  lunarcrush: Boolean(env.LUNARCRUSH_API_KEY),
   gemini: Boolean(env.GEMINI_API_KEY),
 };

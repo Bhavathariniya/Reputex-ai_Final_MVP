@@ -1,7 +1,7 @@
 import { env } from '../config/env';
 import { getChain } from '../chains';
 import { httpJson } from '../lib/http';
-import { cached } from '../lib/cache';
+import { cachedIf } from '../lib/cache';
 import { logger } from '../lib/logger';
 
 /**
@@ -31,22 +31,32 @@ interface ExplorerResponse<T = unknown> {
   result?: T;
 }
 
-/** Raw EVM bytecode at an address. '0x' means an externally-owned wallet, not a contract. */
-export async function getCode(chainSlug: string, address: string): Promise<string> {
-  return cached(`code:${chainSlug}:${address}`, TTL, async () => {
-    const data = await httpJson<{ result?: string }>(
-      url(chainSlug, { module: 'proxy', action: 'eth_getCode', address, tag: 'latest' }),
-    );
-    return data?.result ?? '0x';
-  });
+/**
+ * Raw EVM bytecode at an address. Returns:
+ *   - a hex string (`'0x'` = externally-owned wallet, longer = contract)
+ *   - `null` when the explorer was unreachable (so callers don't mistake a
+ *     failed lookup for a wallet). Only successful lookups are cached.
+ */
+export async function getCode(chainSlug: string, address: string): Promise<string | null> {
+  return cachedIf(
+    `code:${chainSlug}:${address}`,
+    TTL,
+    (v) => v !== null,
+    async () => {
+      const data = await httpJson<{ result?: string }>(
+        url(chainSlug, { module: 'proxy', action: 'eth_getCode', address, tag: 'latest' }),
+      );
+      return data && typeof data.result === 'string' ? data.result : null;
+    },
+  );
 }
 
-/** True if the address has deployed bytecode (a contract), false if it's a wallet. */
+/** True if the address has deployed bytecode (a contract), false if it's a wallet, null if unreachable. */
 export async function isContract(chainSlug: string, address: string): Promise<boolean | null> {
   const code = await getCode(chainSlug, address);
+  if (code === null) return null; // explorer unreachable
   if (code === '0x') return false;
-  if (code && code.length > 2) return true;
-  return null; // explorer unreachable
+  return code.length > 2;
 }
 
 export interface SourceInfo {
@@ -61,7 +71,7 @@ export interface SourceInfo {
 
 /** Contract verification status + source code (for static analysis). */
 export async function getSourceCode(chainSlug: string, address: string): Promise<SourceInfo> {
-  return cached(`src:${chainSlug}:${address}`, TTL, async () => {
+  return cachedIf(`src:${chainSlug}:${address}`, TTL, (v) => v.available, async () => {
     const data = await httpJson<ExplorerResponse<any[]>>(
       url(chainSlug, { module: 'contract', action: 'getsourcecode', address }),
     );
@@ -92,7 +102,7 @@ export interface CreationInfo {
 
 /** Who deployed the contract and when (used for the contract-age signal). */
 export async function getCreation(chainSlug: string, address: string): Promise<CreationInfo> {
-  return cached(`creation:${chainSlug}:${address}`, TTL, async () => {
+  return cachedIf(`creation:${chainSlug}:${address}`, TTL, (v) => v.available, async () => {
     // Primary: getcontractcreation (V2 returns timestamp on most chains)
     const data = await httpJson<ExplorerResponse<any[]>>(
       url(chainSlug, { module: 'contract', action: 'getcontractcreation', contractaddresses: address }),
@@ -157,7 +167,7 @@ const OWNER_SELECTOR = '0x8da5cb5b';
  * owner(); if not, this returns available:false (we don't guess).
  */
 export async function getOwner(chainSlug: string, address: string): Promise<OwnerInfo> {
-  return cached(`owner:${chainSlug}:${address}`, TTL, async () => {
+  return cachedIf(`owner:${chainSlug}:${address}`, TTL, (v) => v.available, async () => {
     const data = await httpJson<{ result?: string }>(
       url(chainSlug, { module: 'proxy', action: 'eth_call', to: address, data: OWNER_SELECTOR, tag: 'latest' }),
     );
@@ -182,7 +192,7 @@ export interface HolderInfo {
  * degrades to lower confidence rather than inventing a number.
  */
 export async function getHolderConcentration(chainSlug: string, address: string): Promise<HolderInfo> {
-  return cached(`holders:${chainSlug}:${address}`, TTL, async () => {
+  return cachedIf(`holders:${chainSlug}:${address}`, TTL, (v) => v.available, async () => {
     const data = await httpJson<ExplorerResponse<any>>(
       url(chainSlug, { module: 'token', action: 'tokenholderlist', contractaddress: address, page: '1', offset: '100' }),
     );

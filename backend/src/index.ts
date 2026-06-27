@@ -5,6 +5,7 @@ import { env, corsOrigins } from './config/env';
 import { logger } from './lib/logger';
 import { healthRouter } from './routes/health';
 import { analyzeRouter } from './routes/analyze';
+import { sourceRouter } from './routes/source';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
 const app = express();
@@ -31,6 +32,7 @@ app.use(express.json({ limit: '16kb' })); // tiny body cap — we only accept an
 // --- Routes ---
 app.use('/', healthRouter);
 app.use('/api/v1', analyzeRouter);
+app.use('/api/v1', sourceRouter);
 
 // --- Errors ---
 app.use(notFound);

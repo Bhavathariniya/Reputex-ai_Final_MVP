@@ -1,15 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, AlertTriangle, Lock, Code, Users, BarChart2, CheckCircle, Brain, FileText } from 'lucide-react';
-import TokenContractAnalysis from '@/components/TokenContractAnalysis';
-import TokenAnalysis from '@/components/TokenAnalysis';
 import MLAnalysisCard from '@/components/MLAnalysisCard';
 import ContractCodeDisplay from '@/components/ContractCodeDisplay';
 import DexscreenerDisplay from '@/components/DexscreenerDisplay';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { tokenMLService } from '@/lib/ml/tokenMLService';
-import { TokenData } from '@/lib/api-client';
 
 interface ResultTabsProps {
   contractAnalysis: any;
@@ -17,17 +13,19 @@ interface ResultTabsProps {
   tokenData: any;
   address: string;
   network: string;
+  /** Backend analysis result (already computed in Result.tsx). */
+  mlAnalysis?: any;
 }
 
-const ResultTabs: React.FC<ResultTabsProps> = ({ 
-  contractAnalysis, 
-  analysisData, 
+const ResultTabs: React.FC<ResultTabsProps> = ({
+  contractAnalysis,
+  analysisData,
   tokenData,
   address,
-  network 
+  network,
+  mlAnalysis = null,
 }) => {
-  const [mlAnalysis, setMlAnalysis] = useState<any>(null);
-  const [isMLAnalysisLoading, setIsMLAnalysisLoading] = useState(false);
+  const isMLAnalysisLoading = false;
 
   // Helper function to format creation date properly
   const formatCreationDate = (dateString: string | undefined): string => {
@@ -69,42 +67,6 @@ const ResultTabs: React.FC<ResultTabsProps> = ({
     } catch (error) {
       console.error('Error formatting creation date:', error);
       return 'Date Unavailable';
-    }
-  };
-
-  useEffect(() => {
-    // Fetch ML analysis with Dexscreener data
-    if (address && tokenData) {
-      fetchMLAnalysis();
-    }
-  }, [address, network, tokenData]);
-
-  const fetchMLAnalysis = async () => {
-    setIsMLAnalysisLoading(true);
-    try {
-      const tokenDataForML: TokenData = {
-        tokenName: tokenData.tokenName || 'Unknown',
-        tokenSymbol: tokenData.tokenSymbol || 'Unknown',
-        totalSupply: tokenData.totalSupply || '0',
-        decimals: tokenData.decimals || 18,
-        currentPrice: tokenData.currentPrice || 0,
-        marketCap: tokenData.marketCap || 0,
-        tradingVolume: tokenData.tradingVolume || 0,
-        priceChange24h: tokenData.priceChange24h || 0,
-        holderCount: tokenData.holderCount || 0,
-        creationTime: tokenData.creationTime || new Date().toISOString(),
-        isLiquidityLocked: tokenData.isLiquidityLocked || false,
-        contractCreator: tokenData.contractCreator || address,
-        isVerified: tokenData.isVerified || false
-      };
-      
-      const mlResult = await tokenMLService.analyzeTokenWithML(address, tokenDataForML, network);
-      console.log("ML Analysis with Dexscreener completed:", mlResult);
-      setMlAnalysis(mlResult);
-    } catch (error) {
-      console.error("ML Analysis failed:", error);
-    } finally {
-      setIsMLAnalysisLoading(false);
     }
   };
 

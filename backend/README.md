@@ -66,6 +66,24 @@ curl -s -X POST http://localhost:8787/api/v1/analyze \
   -d '{"address":"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48","network":"ethereum"}'
 ```
 
+## Telegram bot
+
+A Telegram bot reuses the same scoring engine (no duplicate logic). Send it any
+token address and it replies with the trust score + key risks.
+
+```bash
+# 1. Create a bot with @BotFather on Telegram, copy the token into backend/.env:
+#    TELEGRAM_BOT_TOKEN=123456:ABC...
+#    WEB_APP_URL=https://your-frontend-url   (for the "Full report" button)
+# 2. Run it:
+npm run bot        # dev (watch)
+# or in production: npm run build && npm run start:bot
+```
+
+Commands: `/start`, `/help`, `/scan 0x…`, or just paste an address. The bot
+auto-detects the chain and replies with a formatted card + inline buttons
+("Full report", "Explorer").
+
 ## Architecture
 
 ```

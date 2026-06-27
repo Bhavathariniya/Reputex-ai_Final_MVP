@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,12 +60,11 @@ const BlockchainSelector: React.FC<{
             disabled={disabled}
             onClick={() => onNetworkChange(blockchain.id)}
             className={cn(
-              "px-3 py-2 rounded-full text-sm transition-all duration-300 ease-in-out",
-              "border border-transparent hover:border-neon-cyan/50",
-              "flex items-center gap-2",
+              "px-3 py-1.5 rounded-full text-sm transition-all duration-200 ease-in-out cursor-pointer",
+              "border flex items-center gap-2",
               selectedNetwork === blockchain.id
-                ? "bg-neon-cyan/20 text-neon-cyan border-neon-cyan"
-                : "bg-muted/20 text-muted-foreground hover:bg-muted/40",
+                ? "bg-primary/15 text-primary border-primary/60"
+                : "bg-white/[0.03] text-muted-foreground border-white/10 hover:border-primary/30 hover:text-foreground",
               disabled && "opacity-50 cursor-not-allowed"
             )}
           >
@@ -131,33 +130,36 @@ const AddressInput: React.FC<AddressInputProps> = ({ onSubmit, isLoading }) => {
         disabled={isLoading}
       />
 
-      <div className="glowing-card p-2 rounded-xl">
-        <div className="flex flex-col md:flex-row gap-2">
+      <div className="glowing-card p-2">
+        <div className="flex flex-col gap-2 md:flex-row">
           <div className="relative flex-grow">
             <Input
-              placeholder="Enter wallet or token address (0x...)"
+              placeholder="Paste a token contract address (0x…)"
               value={address}
               onChange={handleAddressChange}
-              className="pl-10 py-6 bg-transparent border-muted focus-visible:ring-neon-cyan"
+              className="h-14 border-transparent bg-transparent pl-11 text-base focus-visible:ring-primary"
               disabled={isLoading}
               spellCheck={false}
               autoComplete="off"
             />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           </div>
 
-          <Button 
-            type="submit" 
-            className="bg-neon-cyan hover:bg-neon-cyan/80 py-6" 
+          <Button
+            type="submit"
+            className="h-14 bg-primary px-8 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
             disabled={isLoading}
           >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analyzing...
+                Analyzing…
               </>
             ) : (
-              <>Analyze</>
+              <>
+                <Shield className="mr-2 h-4 w-4" />
+                Analyze
+              </>
             )}
           </Button>
         </div>

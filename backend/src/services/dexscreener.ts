@@ -1,5 +1,5 @@
 import { httpJson } from '../lib/http';
-import { cached } from '../lib/cache';
+import { cachedIf } from '../lib/cache';
 import { env } from '../config/env';
 
 /**
@@ -26,7 +26,7 @@ export interface MarketInfo {
 }
 
 export async function getMarket(address: string): Promise<MarketInfo> {
-  return cached(`dex:${address}`, env.CACHE_TTL_SECONDS, async () => {
+  return cachedIf(`dex:${address}`, env.CACHE_TTL_SECONDS, (v) => v.available, async () => {
     const data = await httpJson<any>(`${BASE}/${address}`);
     const pairs: any[] = data?.pairs ?? [];
     if (!pairs.length) return { available: false };

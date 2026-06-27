@@ -1,6 +1,6 @@
 import { getChain } from '../chains';
 import { httpJson } from '../lib/http';
-import { cached } from '../lib/cache';
+import { cachedIf } from '../lib/cache';
 import { env } from '../config/env';
 
 /**
@@ -27,7 +27,7 @@ export async function getCommunity(chainSlug: string, address: string): Promise<
   const platform = getChain(chainSlug).coingeckoPlatform;
   if (!platform) return { available: false };
 
-  return cached(`cg:${chainSlug}:${address}`, env.CACHE_TTL_SECONDS, async () => {
+  return cachedIf(`cg:${chainSlug}:${address}`, env.CACHE_TTL_SECONDS, (v) => v.available, async () => {
     const key = env.COINGECKO_API_KEY ? `?x_cg_api_key=${env.COINGECKO_API_KEY}` : '';
     const data = await httpJson<any>(`${BASE}/coins/${platform}/contract/${address}${key}`);
     if (!data || data.error || !data.id) return { available: false };

@@ -1,8 +1,12 @@
-
-import axios from 'axios';
-
-const ETHERSCAN_API_KEY = import.meta.env.VITE_ETHERSCAN_API_KEY;
-const ETHERSCAN_BASE_URL = 'https://api.etherscan.io/api';
+/**
+ * Contract source-code client.
+ *
+ * Fetches verified source from the ReputeX backend (which holds the Etherscan
+ * key) instead of calling Etherscan directly. No API key in the browser.
+ * The exported function signatures are unchanged so consumers (ContractCodeDisplay)
+ * need no edits.
+ */
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787';
 
 export interface ContractSourceInfo {
   sourceCode: string;
@@ -13,139 +17,61 @@ export interface ContractSourceInfo {
   constructorArguments?: string;
 }
 
-export interface EtherscanContractResponse {
-  status: string;
-  message: string;
-  result: Array<{
-    SourceCode: string;
-    ABI: string;
-    ContractName: string;
-    CompilerVersion: string;
-    OptimizationUsed: string;
-    Runs: string;
-    ConstructorArguments: string;
-    EVMVersion: string;
-    Library: string;
-    LicenseType: string;
-    Proxy: string;
-    Implementation: string;
-    SwarmSource: string;
-  }>;
-}
+export async function fetchContractCode(
+  address: string,
+  network = 'ethereum',
+): Promise<ContractSourceInfo | null> {
+  if (!address || address.length !== 42) {
+    throw new Error('Invalid contract address');
+  }
 
-/**
- * Fetches verified smart contract source code from Etherscan
- * @param address - The contract address to fetch source code for
- * @returns Promise<ContractSourceInfo | null>
- */
-export async function fetchContractCode(address: string): Promise<ContractSourceInfo | null> {
-  try {
-    if (!address || address.length !== 42) {
-      throw new Error('Invalid contract address');
-    }
+  const res = await fetch(
+    `${API_BASE}/api/v1/source?address=${address}&network=${network}`,
+  );
 
-    const response = await axios.get<EtherscanContractResponse>(
-      `${ETHERSCAN_BASE_URL}?module=contract&action=getsourcecode&address=${address}&apikey=${ETHERSCAN_API_KEY}`,
-      {
-        timeout: 10000, // 10 second timeout
-        headers: {
-          'Accept': 'application/json',
-        }
-      }
-    );
-
-    if (response.data.status !== '1') {
-      console.warn('Etherscan API returned error:', response.data.message);
-      return null;
-    }
-
-    const result = response.data.result[0];
-    
-    // Check if contract is verified
-    const isVerified = result.SourceCode !== '';
-    
-    if (!isVerified) {
-      return {
-        sourceCode: '',
-        contractName: '',
-        compilerVersion: '',
-        isVerified: false
-      };
-    }
-
-    // Handle proxy contracts
-    let sourceCode = result.SourceCode;
-    
-    // If source code starts with {{ it's a JSON format (multiple files)
-    if (sourceCode.startsWith('{{')) {
-      try {
-        // Remove outer braces and parse JSON
-        const jsonStr = sourceCode.slice(1, -1);
-        const parsedSource = JSON.parse(jsonStr);
-        
-        // Extract main contract source or combine all sources
-        if (parsedSource.sources) {
-          const mainFile = Object.keys(parsedSource.sources)[0];
-          sourceCode = parsedSource.sources[mainFile].content || sourceCode;
-        }
-      } catch (parseError) {
-        console.warn('Failed to parse JSON source code format, using raw source');
-      }
-    }
-
-    return {
-      sourceCode,
-      contractName: result.ContractName || 'Unknown',
-      compilerVersion: result.CompilerVersion || 'Unknown',
-      isVerified: true,
-      implementation: result.Implementation || undefined,
-      constructorArguments: result.ConstructorArguments || undefined
-    };
-
-  } catch (error) {
-    console.error('Error fetching contract code from Etherscan:', error);
-    
-    if (axios.isAxiosError(error)) {
-      if (error.code === 'ECONNABORTED') {
-        throw new Error('Request timeout - Etherscan API is not responding');
-      }
-      if (error.response?.status === 429) {
-        throw new Error('Rate limit exceeded - Please try again later');
-      }
-      if (error.response?.status >= 500) {
-        throw new Error('Etherscan API is currently unavailable');
-      }
-    }
-    
+  if (!res.ok) {
+    if (res.status === 429) throw new Error('Rate limit exceeded - Please try again later');
+    if (res.status >= 500) throw new Error('Source service is currently unavailable');
     throw new Error('Failed to fetch contract source code');
   }
+
+  const data = await res.json();
+
+  if (!data.isVerified) {
+    return { sourceCode: '', contractName: '', compilerVersion: '', isVerified: false };
+  }
+
+  // Etherscan returns multi-file sources wrapped in {{ ... }} JSON; flatten to
+  // the first file's content for display.
+  let sourceCode: string = data.sourceCode || '';
+  if (sourceCode.startsWith('{{')) {
+    try {
+      const parsed = JSON.parse(sourceCode.slice(1, -1));
+      if (parsed.sources) {
+        const mainFile = Object.keys(parsed.sources)[0];
+        sourceCode = parsed.sources[mainFile]?.content || sourceCode;
+      }
+    } catch {
+      // keep raw source
+    }
+  }
+
+  return {
+    sourceCode,
+    contractName: data.contractName || 'Unknown',
+    compilerVersion: data.compilerVersion || 'Unknown',
+    isVerified: true,
+  };
 }
 
-/**
- * Formats source code for display by removing excessive whitespace
- * @param sourceCode - Raw source code string
- * @returns Formatted source code
- */
 export function formatSourceCode(sourceCode: string): string {
   if (!sourceCode) return '';
-  
-  return sourceCode
-    .replace(/\r\n/g, '\n') // Normalize line endings
-    .replace(/\t/g, '  ') // Convert tabs to spaces
-    .trim();
+  return sourceCode.replace(/\r\n/g, '\n').replace(/\t/g, '  ').trim();
 }
 
-/**
- * Extracts a summary of the contract (first N lines)
- * @param sourceCode - Full source code
- * @param maxLines - Maximum number of lines to include (default: 50)
- * @returns Truncated source code
- */
-export function getContractSummary(sourceCode: string, maxLines: number = 50): string {
+export function getContractSummary(sourceCode: string, maxLines = 50): string {
   if (!sourceCode) return '';
-  
   const lines = sourceCode.split('\n');
   if (lines.length <= maxLines) return sourceCode;
-  
   return lines.slice(0, maxLines).join('\n') + '\n\n// ... (truncated)';
 }

@@ -125,6 +125,7 @@ const Result = () => {
                   tokenData={tokenData}
                   address={address}
                   network={resolvedNetwork || 'ethereum'}
+                  mlAnalysis={mlAnalysis}
                 />
               )}
             </>

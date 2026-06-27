@@ -34,3 +34,22 @@ export async function cached<T>(key: string, ttlSeconds: number, fn: () => Promi
   cacheSet(key, value, ttlSeconds);
   return value;
 }
+
+/**
+ * Like `cached`, but only stores the result when `shouldCache(value)` is true.
+ * This prevents a transient provider failure (which yields an "unavailable"
+ * result) from poisoning the cache for the whole TTL — failures are retried on
+ * the next request instead of being served stale.
+ */
+export async function cachedIf<T>(
+  key: string,
+  ttlSeconds: number,
+  shouldCache: (value: T) => boolean,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const hit = cacheGet<T>(key);
+  if (hit !== undefined) return hit;
+  const value = await fn();
+  if (shouldCache(value)) cacheSet(key, value, ttlSeconds);
+  return value;
+}

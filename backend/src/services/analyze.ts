@@ -61,7 +61,7 @@ export async function analyzeToken(opts: AnalyzeOptions): Promise<AnalyzeResult>
 
   if (network && isSupportedChain(network)) {
     const code = await getCode(network, address);
-    addressType = code === '0x' ? 'wallet' : code.length > 2 ? 'contract' : 'unknown';
+    addressType = code === null ? 'unknown' : code === '0x' ? 'wallet' : code.length > 2 ? 'contract' : 'unknown';
   } else {
     const detected = await detectChain(address);
     network = detected.network;

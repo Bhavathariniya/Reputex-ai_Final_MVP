@@ -53,15 +53,26 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))'
         },
+        success: { DEFAULT: 'hsl(var(--success))', foreground: 'hsl(210 30% 98%)' },
+        warning: { DEFAULT: 'hsl(var(--warning))', foreground: 'hsl(222 47% 8%)' },
+        danger: { DEFAULT: 'hsl(var(--danger))', foreground: 'hsl(210 30% 98%)' },
+        brand: {
+          gold: '#F59E0B',
+          amber: '#FBBF24',
+          navy: '#0B1120',
+          cyan: '#22D3EE',
+        },
+        /* Legacy `neon-*` references remapped to the new palette so older
+           markup stays on-brand (gold trust / cyan tech). */
         neon: {
-          pink: '#FF00FF',
-          purple: '#8A2BE2',
-          cyan: '#00FFFF',
-          blue: '#2E8BFF',
-          violet: '#4B0082',
-          yellow: '#FFFF00',
-          orange: '#FFA500',
-          red: '#FF0000',
+          pink: '#F59E0B',
+          purple: '#F59E0B',
+          cyan: '#22D3EE',
+          blue: '#22D3EE',
+          violet: '#F59E0B',
+          yellow: '#FBBF24',
+          orange: '#F59E0B',
+          red: '#EF4444',
         },
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
@@ -80,7 +91,8 @@ export default {
         sm: 'calc(var(--radius) - 4px)'
       },
       fontFamily: {
-        sans: ['Space Grotesk', 'sans-serif'],
+        sans: ['Exo 2', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Orbitron', 'Exo 2', 'sans-serif'],
       },
       keyframes: {
         'accordion-down': {
@@ -129,7 +141,8 @@ export default {
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'neon-gradient': 'linear-gradient(90deg, #FF00FF, #8A2BE2, #00FFFF, #2E8BFF, #4B0082)',
+        'neon-gradient': 'linear-gradient(90deg, #F59E0B, #FBBF24, #22D3EE)',
+        'brand-gradient': 'linear-gradient(92deg, #FCD34D, #F59E0B 55%, #D97706)',
       }
     }
   },

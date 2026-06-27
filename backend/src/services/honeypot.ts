@@ -1,6 +1,6 @@
 import { getChain } from '../chains';
 import { httpJson } from '../lib/http';
-import { cached } from '../lib/cache';
+import { cachedIf } from '../lib/cache';
 import { env } from '../config/env';
 
 /**
@@ -27,7 +27,7 @@ export async function checkHoneypot(chainSlug: string, address: string): Promise
   if (chain.honeypotChainId === null) {
     return { available: false, flags: [] };
   }
-  return cached(`honeypot:${chainSlug}:${address}`, env.CACHE_TTL_SECONDS, async () => {
+  return cachedIf(`honeypot:${chainSlug}:${address}`, env.CACHE_TTL_SECONDS, (v) => v.available, async () => {
     const data = await httpJson<any>(`${BASE}/IsHoneypot?address=${address}&chainID=${chain.honeypotChainId}`);
     if (!data) return { available: false, flags: [] };
 
