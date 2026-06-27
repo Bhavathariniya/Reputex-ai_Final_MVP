@@ -1,6 +1,6 @@
 
 // BitQuery API Integration for smart contract events
-const BITQUERY_API_KEY = "***REMOVED_BITQUERY_KEY***";
+const BITQUERY_API_KEY = import.meta.env.VITE_BITQUERY_API_KEY;
 const BITQUERY_API_URL = "https://graphql.bitquery.io/";
 
 interface BitQueryResponse {

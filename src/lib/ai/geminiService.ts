@@ -42,7 +42,7 @@ class GeminiAIService {
   private model: any = null;
 
   constructor() {
-    const apiKey = '***REMOVED_GEMINI_KEY***';
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (apiKey) {
       try {
         this.genAI = new GoogleGenerativeAI(apiKey);
@@ -171,7 +171,7 @@ class GeminiAIService {
 
     try {
       console.log('🚀 GEMINI API: Starting real-time AI risk analysis...');
-      console.log('📝 GEMINI API: Using API key:', '***REMOVED_GEMINI_KEY***'.substring(0, 20) + '...');
+      console.log('📝 GEMINI API: Using API key:', (import.meta.env.VITE_GEMINI_API_KEY || '').substring(0, 20) + '...');
 
       const prompt = this.createAnalysisPrompt(input);
       console.log('📤 GEMINI API: Sending prompt to Gemini 2.0 Flash...');

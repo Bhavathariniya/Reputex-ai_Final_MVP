@@ -1,6 +1,6 @@
 
 // Alchemy API Integration for contract verification
-const ALCHEMY_API_KEY = "***REMOVED_ALCHEMY_KEY***";
+const ALCHEMY_API_KEY = import.meta.env.VITE_ALCHEMY_API_KEY;
 const ALCHEMY_BASE_URL = `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
 
 interface AlchemyResponse {

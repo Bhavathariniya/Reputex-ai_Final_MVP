@@ -1,6 +1,6 @@
 
 // LunarCrush API Integration for social sentiment data
-const LUNARCRUSH_API_KEY = "***REMOVED_LUNARCRUSH_KEY***";
+const LUNARCRUSH_API_KEY = import.meta.env.VITE_LUNARCRUSH_API_KEY;
 const LUNARCRUSH_BASE_URL = "https://lunarcrush.com/api/v2";
 
 export interface LunarCrushSocialStats {

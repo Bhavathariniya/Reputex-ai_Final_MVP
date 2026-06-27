@@ -55,7 +55,7 @@ const TokenGeckoDetails: React.FC<TokenGeckoDetailsProps> = ({ contractAddress }
             const geckoId = data.tokenData?.coingecko_coin_id;
             if (geckoId) {
               const response = await fetch(
-                `https://api.coingecko.com/api/v3/coins/${geckoId}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false&x_cg_api_key=***REMOVED_COINGECKO_KEY***`
+                `https://api.coingecko.com/api/v3/coins/${geckoId}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false&x_cg_api_key=${import.meta.env.VITE_COINGECKO_API_KEY}`
               );
               
               if (response.ok) {
@@ -66,7 +66,7 @@ const TokenGeckoDetails: React.FC<TokenGeckoDetailsProps> = ({ contractAddress }
             } else {
               // Try to get by contract address
               const response = await fetch(
-                `https://api.coingecko.com/api/v3/coins/ethereum/contract/${contractAddress}?x_cg_api_key=***REMOVED_COINGECKO_KEY***`
+                `https://api.coingecko.com/api/v3/coins/ethereum/contract/${contractAddress}?x_cg_api_key=${import.meta.env.VITE_COINGECKO_API_KEY}`
               );
               
               if (response.ok) {

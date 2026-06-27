@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 
 // CoinGecko API base URL
 const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
-const COINGECKO_API_KEY = '***REMOVED_COINGECKO_KEY***'; // Your API key
+const COINGECKO_API_KEY = import.meta.env.VITE_COINGECKO_API_KEY;
 
 // Interface for token market data from CoinGecko
 export interface CoinGeckoTokenData {

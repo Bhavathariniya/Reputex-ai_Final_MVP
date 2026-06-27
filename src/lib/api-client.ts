@@ -7,12 +7,12 @@ import { getContractCreationInfoAlchemy, getTokenTotalSupply } from './api/alche
 import { format } from 'date-fns';
 
 // API configurations
-const ETHERSCAN_API_KEY = "***REMOVED_ETHERSCAN_KEY***";
-const MORALIS_API_KEY = "***REMOVED_MORALIS_KEY***";
-const LUNARCRUSH_API_KEY = "***REMOVED_LUNARCRUSH_KEY***";
-const BITQUERY_API_KEY = "***REMOVED_BITQUERY_KEY***";
-const ALCHEMY_API_KEY = "***REMOVED_ALCHEMY_KEY***";
-const GEMINI_API_KEY = "***REMOVED_GEMINI_KEY***";
+const ETHERSCAN_API_KEY = import.meta.env.VITE_ETHERSCAN_API_KEY;
+const MORALIS_API_KEY = import.meta.env.VITE_MORALIS_API_KEY;
+const LUNARCRUSH_API_KEY = import.meta.env.VITE_LUNARCRUSH_API_KEY;
+const BITQUERY_API_KEY = import.meta.env.VITE_BITQUERY_API_KEY;
+const ALCHEMY_API_KEY = import.meta.env.VITE_ALCHEMY_API_KEY;
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 // API URLs by network
 const ETHERSCAN_API_URL = "https://api.etherscan.io/api";

@@ -1,7 +1,7 @@
 
 import axios from 'axios';
 
-const ETHERSCAN_API_KEY = '***REMOVED_ETHERSCAN_KEY***';
+const ETHERSCAN_API_KEY = import.meta.env.VITE_ETHERSCAN_API_KEY;
 const ETHERSCAN_BASE_URL = 'https://api.etherscan.io/api';
 
 export interface ContractSourceInfo {

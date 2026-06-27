@@ -1,6 +1,6 @@
 
 // Moralis API Integration for token metadata
-const MORALIS_API_KEY = "***REMOVED_MORALIS_KEY***";
+const MORALIS_API_KEY = import.meta.env.VITE_MORALIS_API_KEY;
 const MORALIS_API_BASE = "https://deep-index.moralis.io/api/v2.2";
 import axios from 'axios';
 
