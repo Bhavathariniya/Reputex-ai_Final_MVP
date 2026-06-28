@@ -1,0 +1,37 @@
+# Render blueprint for the ReputeX backend.
+# Deploy: Render Dashboard → New → Blueprint → pick this repo.
+# Render reads this file, provisions the service, and prompts for the secret
+# env vars marked `sync: false`.
+#
+# The API runs as a FREE web service. The Telegram bot needs an always-on
+# process (a Background Worker, which is a PAID plan) — see backend/DEPLOY.md
+# for the optional worker block to add when you're ready.
+
+services:
+  - type: web
+    name: reputex-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # CORS allowlist — must exactly match your deployed frontend origin(s).
+      - key: CORS_ORIGINS
+        value: https://reputex-ai.netlify.app
+      # Public URL of the web app (used for bot "Full report" links).
+      - key: WEB_APP_URL
+        value: https://reputex-ai.netlify.app
+      # Provider secrets — entered in the Render dashboard, never committed.
+      - key: ETHERSCAN_API_KEY
+        sync: false
+      - key: MORALIS_API_KEY
+        sync: false
+      - key: COINGECKO_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
