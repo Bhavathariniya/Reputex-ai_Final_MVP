@@ -48,41 +48,37 @@ custom domain, add it comma-separated:
 
 ---
 
-## 3. (Optional) Deploy the Telegram bot
+## 3. Telegram bot (webhook mode — free, no extra service)
 
-The bot uses **long-polling**, so it needs an always-on process — a Render
-**Background Worker**, which requires a **paid** plan ($7/mo). To add it, append
-this to `services:` in `render.yaml`, commit, and re-sync the blueprint:
+The bot runs in **webhook mode from the same API web service**, so there's no
+separate process to pay for. It activates automatically at startup when a valid
+token is present, using Render's injected `RENDER_EXTERNAL_URL` as the public
+webhook URL.
 
-```yaml
-  - type: worker
-    name: reputex-bot
-    runtime: node
-    rootDir: backend
-    plan: starter        # workers are not available on the free plan
-    buildCommand: npm install && npm run build
-    startCommand: npm run start:bot
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: WEB_APP_URL
-        value: https://reputex-ai.netlify.app
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false      # paste the FULL BotFather token: <bot_id>:<secret>
-      - key: ETHERSCAN_API_KEY
-        sync: false
-      - key: MORALIS_API_KEY
-        sync: false
-      - key: COINGECKO_API_KEY
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
-```
+To enable it:
 
-> Reminder: the token currently in `.env` is malformed (missing the
-> `<bot_id>:` prefix). Get the full token from @BotFather before deploying the
-> bot.
+1. In the Render dashboard for `reputex-api`, set the secret env var
+   **`TELEGRAM_BOT_TOKEN`** to the **FULL** token from @BotFather
+   (`<bot_id>:<secret>`, e.g. `8012345678:AA...`).
+   > The token currently in your local `.env` is malformed — it's missing the
+   > `<bot_id>:` prefix. Get the complete token from @BotFather (`/mybots` →
+   > API Token) first.
+2. Save and let the service redeploy. On boot the logs show
+   `telegram_webhook_set` with the URL, and the bot is live.
+3. Message your bot on Telegram and paste a token address to test.
 
-If you'd rather keep the bot free, the alternative is converting it to
-**webhook mode** and serving it from the API web service — ask and I'll wire
-that up.
+How it works (for reference):
+- `POST /telegram/webhook` receives updates (grammY `webhookCallback`).
+- The route is protected by a secret token header (auto-derived from the bot
+  token, or set `TELEGRAM_WEBHOOK_SECRET` to override).
+- If `TELEGRAM_BOT_TOKEN` is blank, the webhook is simply not mounted and the
+  API runs normally without the bot.
+
+> **Free-tier caveat:** while the web service is asleep, the first Telegram
+> message wakes it (cold start ~50s), so the very first reply after idle is
+> slow. Telegram retries delivery, so messages aren't lost. Upgrade to Starter
+> to keep it always-on.
+
+**Local testing** still uses long-polling — run `npm run bot` (no public URL
+needed). Webhook mode only engages when `PUBLIC_API_URL` / `RENDER_EXTERNAL_URL`
+is set.

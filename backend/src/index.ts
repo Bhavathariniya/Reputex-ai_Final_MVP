@@ -7,6 +7,7 @@ import { healthRouter } from './routes/health';
 import { analyzeRouter } from './routes/analyze';
 import { sourceRouter } from './routes/source';
 import { errorHandler, notFound } from './middleware/errorHandler';
+import { mountTelegramWebhook, activateTelegramWebhook } from './bot/webhook';
 
 const app = express();
 
@@ -27,6 +28,10 @@ app.use(
     methods: ['GET', 'POST'],
   }),
 );
+// Telegram webhook receiver — mounted BEFORE the global body cap (it brings its
+// own parser) and before the 404 handler. Returns null when the bot is disabled.
+const telegramBot = mountTelegramWebhook(app);
+
 app.use(express.json({ limit: '16kb' })); // tiny body cap — we only accept an address
 
 // --- Routes ---
@@ -44,6 +49,8 @@ const server = app.listen(env.PORT, () => {
     env: env.NODE_ENV,
     cors: corsOrigins,
   });
+  // Register the webhook with Telegram once we're actually listening.
+  if (telegramBot) void activateTelegramWebhook(telegramBot);
 });
 
 // Graceful shutdown

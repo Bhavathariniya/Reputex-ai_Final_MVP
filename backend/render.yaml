@@ -3,9 +3,9 @@
 # Render reads this file, provisions the service, and prompts for the secret
 # env vars marked `sync: false`.
 #
-# The API runs as a FREE web service. The Telegram bot needs an always-on
-# process (a Background Worker, which is a PAID plan) — see backend/DEPLOY.md
-# for the optional worker block to add when you're ready.
+# The API runs as a FREE web service. The Telegram bot runs in WEBHOOK mode from
+# this same service (no separate paid worker needed) — it activates automatically
+# when TELEGRAM_BOT_TOKEN is set, using Render's injected RENDER_EXTERNAL_URL.
 
 services:
   - type: web
@@ -34,4 +34,8 @@ services:
       - key: COINGECKO_API_KEY
         sync: false
       - key: GEMINI_API_KEY
+        sync: false
+      # Telegram bot — paste the FULL BotFather token (<bot_id>:<secret>) to
+      # enable webhook mode. Leave blank to run the API without the bot.
+      - key: TELEGRAM_BOT_TOKEN
         sync: false

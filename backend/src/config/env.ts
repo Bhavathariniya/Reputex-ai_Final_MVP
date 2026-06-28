@@ -23,10 +23,15 @@ const schema = z.object({
   COINGECKO_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
 
-  // Telegram bot (optional — only needed to run `npm run bot`)
+  // Telegram bot (optional — needed for `npm run bot` or webhook mode)
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   // Public URL of the web app, used for "Open full report" buttons in the bot.
   WEB_APP_URL: z.string().default('http://localhost:8080'),
+  // Public https URL of THIS API, used to register the Telegram webhook.
+  // On Render this is auto-injected as RENDER_EXTERNAL_URL; set explicitly elsewhere.
+  PUBLIC_API_URL: z.string().optional(),
+  // Optional shared secret validating inbound webhook calls (auto-derived if unset).
+  TELEGRAM_WEBHOOK_SECRET: z.string().optional(),
 });
 
 const parsed = schema.safeParse(process.env);
