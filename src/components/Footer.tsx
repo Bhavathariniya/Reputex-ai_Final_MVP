@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Github, Twitter, Globe } from 'lucide-react';
+import { Github, Twitter, Globe, Send } from 'lucide-react';
+import { TELEGRAM_BOT_URL } from '@/config/links';
 
 const Footer = () => {
   return (
@@ -27,7 +28,19 @@ const Footer = () => {
           
           <div>
             <h4 className="font-semibold mb-4">Connect</h4>
+            <a
+              href={TELEGRAM_BOT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mb-4 text-sm text-neon-cyan hover:text-foreground transition-colors"
+            >
+              <Send className="h-4 w-4" />
+              Scan tokens on Telegram
+            </a>
             <div className="flex gap-4">
+              <a href={TELEGRAM_BOT_URL} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Telegram">
+                <Send className="h-5 w-5" />
+              </a>
               <a href="#" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="GitHub">
                 <Github className="h-5 w-5" />
               </a>

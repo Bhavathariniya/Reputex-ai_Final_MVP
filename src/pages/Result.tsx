@@ -1,22 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import LoadingAnimation from '@/components/LoadingAnimation';
-import ResultTabs from '@/components/ResultTabs';
+import TokenReport from '@/components/TokenReport';
+import TokenAnalytics from '@/components/TokenAnalytics';
+import { SpiralAnimation } from '@/components/ui/spiral-animation';
 import { toast } from 'sonner';
-import { TokenData } from '@/lib/api-client';
-import { MLAnalysisResult } from '@/lib/ml/tokenMLService';
-import MLAnalysisCard from '@/components/MLAnalysisCard';
-import { analyzeAddress, toResultViewModel } from '@/lib/reputexApi';
+import { analyzeAddress, type AnalyzeResult } from '@/lib/reputexApi';
+import { TELEGRAM_BOT_URL } from '@/config/links';
 
 /**
  * Result page.
  *
- * All analysis now runs server-side via the ReputeX backend (genuine,
- * deterministic scoring engine). This page makes ONE call and renders the
- * mapped view model — no provider keys or scoring logic live in the browser.
+ * All analysis runs server-side via the ReputeX backend (genuine, deterministic
+ * scoring engine). This page makes ONE call, then leads with a structured
+ * report (verdict, weighted pillars, findings) followed by chart-driven
+ * analytics. A themed spiral animation sits behind everything.
  */
 const Result = () => {
   const location = useLocation();
@@ -28,10 +28,7 @@ const Result = () => {
   const { address = addressFromParams, network = networkFromParams || 'auto' } = location.state || {};
 
   const [isLoading, setIsLoading] = useState(true);
-  const [analysisData, setAnalysisData] = useState<any>(null);
-  const [contractAnalysis, setContractAnalysis] = useState<any>(null);
-  const [tokenData, setTokenData] = useState<TokenData | null>(null);
-  const [mlAnalysis, setMLAnalysis] = useState<MLAnalysisResult | null>(null);
+  const [rawResult, setRawResult] = useState<AnalyzeResult | null>(null);
   const [resolvedNetwork, setResolvedNetwork] = useState<string>(network || 'ethereum');
   const [error, setError] = useState<string | null>(null);
 
@@ -51,12 +48,8 @@ const Result = () => {
         const result = await analyzeAddress(address, network || 'auto');
         if (cancelled) return;
 
-        const vm = toResultViewModel(result);
-        setMLAnalysis(vm.mlAnalysis);
-        setTokenData(vm.tokenData);
-        setAnalysisData(vm.analysisData);
-        setContractAnalysis(vm.contractAnalysis);
-        setResolvedNetwork(vm.resolvedNetwork);
+        setRawResult(result);
+        setResolvedNetwork(result.network);
       } catch (err) {
         if (cancelled) return;
         const message = err instanceof Error ? err.message : 'An unknown error occurred';
@@ -76,8 +69,14 @@ const Result = () => {
   if (!address) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+    <div className="relative min-h-screen">
+      {/* Themed spiral background */}
+      <div className="fixed inset-0 z-0 opacity-50 pointer-events-none">
+        <SpiralAnimation />
+      </div>
+      <div className="fixed inset-0 z-0 bg-background/55 pointer-events-none" />
+
+      <div className="container relative z-10 mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <Button
             variant="ghost"
@@ -87,21 +86,21 @@ const Result = () => {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Search
           </Button>
+          <a href={TELEGRAM_BOT_URL} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="sm" className="gap-2 border-neon-cyan/40 text-neon-cyan hover:bg-neon-cyan/10">
+              <Send className="h-4 w-4" />
+              Scan on Telegram
+            </Button>
+          </a>
         </div>
 
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold">AI Risk Analysis Results</h1>
+            <h1 className="text-xl sm:text-2xl font-bold">Token Safety Report</h1>
             <div className="text-sm text-muted-foreground">
               Network: <span className="font-semibold capitalize">{resolvedNetwork}</span>
             </div>
           </div>
-
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs sm:text-sm font-mono bg-muted/30 p-2 rounded break-all">{address}</p>
-            </CardContent>
-          </Card>
 
           {isLoading ? (
             <div className="flex justify-center py-12">
@@ -116,17 +115,13 @@ const Result = () => {
             </div>
           ) : (
             <>
-              {mlAnalysis && <MLAnalysisCard mlAnalysis={mlAnalysis} isLoading={false} />}
+              {rawResult && <TokenReport result={rawResult} />}
 
-              {(contractAnalysis || analysisData) && (
-                <ResultTabs
-                  contractAnalysis={contractAnalysis}
-                  analysisData={analysisData}
-                  tokenData={tokenData}
-                  address={address}
-                  network={resolvedNetwork || 'ethereum'}
-                  mlAnalysis={mlAnalysis}
-                />
+              {rawResult && (
+                <div className="pt-2">
+                  <h2 className="text-lg font-semibold mb-3 text-muted-foreground">Detailed analytics</h2>
+                  <TokenAnalytics result={rawResult} address={address} />
+                </div>
               )}
             </>
           )}

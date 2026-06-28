@@ -11,6 +11,20 @@ interface MLAnalysisCardProps {
   isLoading: boolean;
 }
 
+/**
+ * Color helpers — bars are graded by what the number *means*, not a single
+ * brand color. For "risk" metrics a higher value is worse; for "safety"
+ * features a higher value is better. Both map to the same green→red scale.
+ */
+const riskTone = (score: number) => {
+  if (score < 30) return { text: 'text-emerald-400', bar: 'bg-emerald-500', soft: 'bg-emerald-500/10 border-emerald-500/30' };
+  if (score < 50) return { text: 'text-yellow-400', bar: 'bg-yellow-500', soft: 'bg-yellow-500/10 border-yellow-500/30' };
+  if (score < 70) return { text: 'text-orange-400', bar: 'bg-orange-500', soft: 'bg-orange-500/10 border-orange-500/30' };
+  return { text: 'text-red-400', bar: 'bg-red-500', soft: 'bg-red-500/10 border-red-500/30' };
+};
+
+const safetyTone = (score: number) => riskTone(100 - score);
+
 const MLAnalysisCard: React.FC<MLAnalysisCardProps> = ({ mlAnalysis, isLoading }) => {
   const [expandedDropdown, setExpandedDropdown] = useState<string | null>(null);
 
@@ -20,18 +34,18 @@ const MLAnalysisCard: React.FC<MLAnalysisCardProps> = ({ mlAnalysis, isLoading }
 
   if (isLoading) {
     return (
-      <Card className="border-2 border-cyan-500/20 bg-card/50 backdrop-blur-sm">
+      <Card className="border border-border/60 bg-card/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-cyan-400">
-            <Brain className="h-5 w-5" />
-            AI Risk Analysis
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-neon-cyan" />
+            Safety Analysis
           </CardTitle>
-          <CardDescription>Loading AI analysis...</CardDescription>
+          <CardDescription>Running the analysis…</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-600 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-600 rounded w-1/2"></div>
+            <div className="h-4 bg-muted rounded w-3/4"></div>
+            <div className="h-4 bg-muted rounded w-1/2"></div>
           </div>
         </CardContent>
       </Card>
@@ -39,26 +53,30 @@ const MLAnalysisCard: React.FC<MLAnalysisCardProps> = ({ mlAnalysis, isLoading }
   }
 
   const getRiskLevel = (score: number) => {
-    if (score < 30) return { level: 'Low Risk', color: 'text-green-400', bgColor: 'bg-green-500/10 border-green-500/20' };
-    if (score < 50) return { level: 'Moderate Risk', color: 'text-yellow-400', bgColor: 'bg-yellow-500/10 border-yellow-500/20' };
-    if (score < 70) return { level: 'High Risk', color: 'text-orange-400', bgColor: 'bg-orange-500/10 border-orange-500/20' };
-    return { level: 'Critical Risk', color: 'text-red-400', bgColor: 'bg-red-500/10 border-red-500/20' };
+    if (score < 30) return { level: 'Low Risk', ...riskTone(score) };
+    if (score < 50) return { level: 'Moderate Risk', ...riskTone(score) };
+    if (score < 70) return { level: 'High Risk', ...riskTone(score) };
+    return { level: 'Critical Risk', ...riskTone(score) };
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence > 0.8) return 'text-green-400';
+    if (confidence > 0.8) return 'text-emerald-400';
     if (confidence > 0.6) return 'text-yellow-400';
     return 'text-orange-400';
   };
 
-  const overallRisk = getRiskLevel(mlAnalysis.mlScore.overallRisk);
+  const overall = mlAnalysis.mlScore.overallRisk;
+  const overallRisk = getRiskLevel(overall);
+  // Safety score = the inverse, framed positively for the headline number.
+  const safetyScore = Math.max(0, Math.min(100, 100 - overall));
+  const overallTone = riskTone(overall);
 
   // Score info data with emojis and descriptions
   const scoreInfoData = {
     'overall-risk': {
       emoji: '🎯',
-      title: 'What is Overall Risk Score?',
-      description: 'This score combines all risk factors to estimate the overall safety of the token. A lower score means the token is safer. Use this to quickly gauge risk.'
+      title: 'What is the Overall Risk Score?',
+      description: 'This score combines every risk factor below into a single number. Lower is safer. Use it for a quick read, then check the breakdown for the why.'
     },
     'rug-pull': {
       emoji: '🔐',
@@ -113,237 +131,178 @@ const MLAnalysisCard: React.FC<MLAnalysisCardProps> = ({ mlAnalysis, isLoading }
           {children}
           <button
             onClick={() => toggleDropdown(scoreId)}
-            className="flex items-center gap-1 text-gray-400 hover:text-cyan-400 transition-colors duration-200"
+            className="flex items-center gap-1 text-muted-foreground hover:text-neon-cyan transition-colors duration-200"
+            aria-label="More info"
           >
             <Info className="h-4 w-4" />
-            <ChevronDown 
+            <ChevronDown
               className={`h-3 w-3 transition-transform duration-300 ease-in-out ${
                 isExpanded ? 'rotate-180' : 'rotate-0'
-              }`} 
+              }`}
             />
           </button>
         </div>
-        
+
         {/* Dropdown Content */}
         <div className={`
           absolute top-full left-0 right-0 mt-2 z-50 transition-all duration-300 ease-in-out transform
-          ${isExpanded 
-            ? 'opacity-100 translate-y-0 scale-100' 
+          ${isExpanded
+            ? 'opacity-100 translate-y-0 scale-100'
             : 'opacity-0 -translate-y-2 scale-95 pointer-events-none'
           }
         `}>
-          <div className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-md border border-cyan-500/20 rounded-2xl p-4 shadow-lg">
+          <div className="bg-card/95 backdrop-blur-md border border-border rounded-xl p-4 shadow-lg">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-lg">{scoreInfo?.emoji}</span>
-              <h4 className="text-sm font-semibold text-cyan-400">{scoreInfo?.title}</h4>
+              <h4 className="text-sm font-semibold text-foreground">{scoreInfo?.title}</h4>
             </div>
-            <p className="text-xs text-gray-300 leading-relaxed">{scoreInfo?.description}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{scoreInfo?.description}</p>
           </div>
         </div>
       </div>
     );
   };
 
+  // Risk breakdown rows (higher = worse) and feature rows (higher = better).
+  const riskRows = [
+    { id: 'rug-pull', label: 'Rug Pull Risk', value: mlAnalysis.mlScore.rugPullRisk },
+    { id: 'liquidity-risk', label: 'Liquidity Risk', value: mlAnalysis.mlScore.liquidityRisk },
+    { id: 'contract-risk', label: 'Contract Risk', value: mlAnalysis.mlScore.contractRisk },
+    { id: 'community-risk', label: 'Community Risk', value: mlAnalysis.mlScore.communityRisk },
+  ];
+  const featureRows = [
+    { id: 'contract-security', label: 'Contract Security', value: mlAnalysis.features.contractSecurity },
+    { id: 'liquidity-safety', label: 'Liquidity Safety', value: mlAnalysis.features.liquiditySafety },
+    { id: 'community-health', label: 'Community Health', value: mlAnalysis.features.communityHealth },
+    { id: 'market-stability', label: 'Market Stability', value: mlAnalysis.features.marketStability },
+  ];
+
   return (
-    <Card className="border-2 border-cyan-500/20 bg-card/50 backdrop-blur-sm">
+    <Card className="border border-border/60 bg-card/50 backdrop-blur-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-cyan-400">
-            <Brain className="h-5 w-5" />
-            AI Risk Assessment
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-neon-cyan" />
+            Safety Analysis
           </CardTitle>
-          <Badge className={`${overallRisk.bgColor} ${overallRisk.color} border`}>
+          <Badge className={`${overallRisk.soft} ${overallRisk.text} border`}>
             {overallRisk.level}
           </Badge>
         </div>
-        <CardDescription className="text-gray-400">
-          Advanced AI analysis of token safety and legitimacy
+        <CardDescription className="text-muted-foreground">
+          A genuine, on-chain assessment of this token's safety and legitimacy.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* AI Insights Section */}
         {mlAnalysis.geminiAnalysis && (
-          <div className="space-y-3 p-4 bg-purple-500/5 border border-purple-500/20 rounded-lg">
-            <h4 className="text-sm font-medium text-purple-400 flex items-center gap-2">
-              <Brain className="h-4 w-4" />
+          <div className="space-y-3 p-4 bg-muted/20 border border-border/60 rounded-lg">
+            <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Brain className="h-4 w-4 text-neon-cyan" />
               AI Insights
             </h4>
-            <p className="text-sm text-gray-300 leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               {mlAnalysis.geminiAnalysis.reasoning}
             </p>
             <div className="flex justify-between items-center text-xs">
-              <span className="text-purple-400">AI Confidence: {mlAnalysis.geminiAnalysis.confidence}%</span>
-              <span className="text-gray-500">Advanced AI Analysis</span>
+              <span className="text-neon-cyan">AI Confidence: {mlAnalysis.geminiAnalysis.confidence}%</span>
+              <span className="text-muted-foreground">Advanced AI Analysis</span>
             </div>
           </div>
         )}
 
-        {/* Overall Risk Score */}
-        <div className="space-y-2 relative">
-          <div className="flex justify-between items-center">
-            <ScoreDropdown scoreId="overall-risk">
-              <span className="text-sm font-medium text-gray-300">Overall Risk Score</span>
-            </ScoreDropdown>
-            <span className={`text-xl font-bold ${overallRisk.color}`}>
-              {mlAnalysis.mlScore.overallRisk}%
-            </span>
+        {/* Headline — Safety score + overall risk, side by side */}
+        <div className={`rounded-xl border p-5 ${overallRisk.soft}`}>
+          <div className="flex items-end justify-between mb-3">
+            <div className="space-y-1">
+              <ScoreDropdown scoreId="overall-risk">
+                <span className="text-sm font-medium text-muted-foreground">Overall Risk Score</span>
+              </ScoreDropdown>
+              <div className="flex items-baseline gap-2">
+                <span className={`text-4xl font-bold ${overallTone.text}`}>{overall}</span>
+                <span className="text-sm text-muted-foreground">/ 100 risk</span>
+              </div>
+            </div>
+            <div className="text-right space-y-1">
+              <span className="text-xs text-muted-foreground">Safety</span>
+              <div className={`text-2xl font-bold ${safetyTone(safetyScore).text}`}>{safetyScore}%</div>
+            </div>
           </div>
-          <Progress 
-            value={mlAnalysis.mlScore.overallRisk} 
-            className="h-3 bg-gray-700/50"
+          <Progress
+            value={overall}
+            className="h-3 bg-muted/50"
+            indicatorClassName={overallTone.bar}
           />
-          <div className="flex justify-between items-center text-xs text-gray-500">
-            <span>Safe</span>
+          <div className="flex justify-between items-center text-xs text-muted-foreground mt-2">
+            <span>🟢 Safe</span>
             <span className={getConfidenceColor(mlAnalysis.mlScore.confidence)}>
               Confidence: {Math.round(mlAnalysis.mlScore.confidence * 100)}%
             </span>
-            <span>Dangerous</span>
+            <span>Dangerous 🔴</span>
           </div>
         </div>
 
         {/* Risk Breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2 relative">
-            <div className="flex justify-between items-center">
-              <ScoreDropdown scoreId="rug-pull">
-                <span className="text-sm text-gray-300">Rug Pull Risk</span>
-              </ScoreDropdown>
-              <span className="text-sm font-medium text-cyan-400">
-                {mlAnalysis.mlScore.rugPullRisk}%
-              </span>
-            </div>
-            <Progress 
-              value={mlAnalysis.mlScore.rugPullRisk} 
-              className="h-2 bg-gray-700/50"
-            />
-          </div>
-          
-          <div className="space-y-2 relative">
-            <div className="flex justify-between items-center">
-              <ScoreDropdown scoreId="liquidity-risk">
-                <span className="text-sm text-gray-300">Liquidity Risk</span>
-              </ScoreDropdown>
-              <span className="text-sm font-medium text-cyan-400">
-                {mlAnalysis.mlScore.liquidityRisk}%
-              </span>
-            </div>
-            <Progress 
-              value={mlAnalysis.mlScore.liquidityRisk} 
-              className="h-2 bg-gray-700/50"
-            />
-          </div>
-          
-          <div className="space-y-2 relative">
-            <div className="flex justify-between items-center">
-              <ScoreDropdown scoreId="contract-risk">
-                <span className="text-sm text-gray-300">Contract Risk</span>
-              </ScoreDropdown>
-              <span className="text-sm font-medium text-cyan-400">
-                {mlAnalysis.mlScore.contractRisk}%
-              </span>
-            </div>
-            <Progress 
-              value={mlAnalysis.mlScore.contractRisk} 
-              className="h-2 bg-gray-700/50"
-            />
-          </div>
-          
-          <div className="space-y-2 relative">
-            <div className="flex justify-between items-center">
-              <ScoreDropdown scoreId="community-risk">
-                <span className="text-sm text-gray-300">Community Risk</span>
-              </ScoreDropdown>
-              <span className="text-sm font-medium text-cyan-400">
-                {mlAnalysis.mlScore.communityRisk}%
-              </span>
-            </div>
-            <Progress 
-              value={mlAnalysis.mlScore.communityRisk} 
-              className="h-2 bg-gray-700/50"
-            />
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-orange-400" />
+            Risk Breakdown
+            <span className="text-xs text-muted-foreground font-normal">(lower is better)</span>
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {riskRows.map((row) => {
+              const tone = riskTone(row.value);
+              return (
+                <div key={row.id} className="space-y-2 relative">
+                  <div className="flex justify-between items-center">
+                    <ScoreDropdown scoreId={row.id}>
+                      <span className="text-sm text-muted-foreground">{row.label}</span>
+                    </ScoreDropdown>
+                    <span className={`text-sm font-semibold ${tone.text}`}>{row.value}%</span>
+                  </div>
+                  <Progress value={row.value} className="h-2 bg-muted/50" indicatorClassName={tone.bar} />
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* Feature Scores */}
         <div className="space-y-3">
-          <h4 className="text-sm font-medium text-cyan-400 flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Feature Analysis
+          <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-neon-cyan" />
+            Safety Signals
+            <span className="text-xs text-muted-foreground font-normal">(higher is better)</span>
           </h4>
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gray-800/30 p-3 rounded-lg border border-gray-700/50 relative">
-              <div className="flex justify-between items-center mb-1">
-                <ScoreDropdown scoreId="contract-security">
-                  <span className="text-xs text-gray-400">Contract Security</span>
-                </ScoreDropdown>
-                <span className="text-sm font-medium text-cyan-400">
-                  {mlAnalysis.features.contractSecurity}%
-                </span>
-              </div>
-              <Progress 
-                value={mlAnalysis.features.contractSecurity} 
-                className="h-1.5 bg-gray-700/50"
-              />
-            </div>
-            
-            <div className="bg-gray-800/30 p-3 rounded-lg border border-gray-700/50 relative">
-              <div className="flex justify-between items-center mb-1">
-                <ScoreDropdown scoreId="liquidity-safety">
-                  <span className="text-xs text-gray-400">Liquidity Safety</span>
-                </ScoreDropdown>
-                <span className="text-sm font-medium text-cyan-400">
-                  {mlAnalysis.features.liquiditySafety}%
-                </span>
-              </div>
-              <Progress 
-                value={mlAnalysis.features.liquiditySafety} 
-                className="h-1.5 bg-gray-700/50"
-              />
-            </div>
-            
-            <div className="bg-gray-800/30 p-3 rounded-lg border border-gray-700/50 relative">
-              <div className="flex justify-between items-center mb-1">
-                <ScoreDropdown scoreId="community-health">
-                  <span className="text-xs text-gray-400">Community Health</span>
-                </ScoreDropdown>
-                <span className="text-sm font-medium text-cyan-400">
-                  {mlAnalysis.features.communityHealth}%
-                </span>
-              </div>
-              <Progress 
-                value={mlAnalysis.features.communityHealth} 
-                className="h-1.5 bg-gray-700/50"
-              />
-            </div>
-            
-            <div className="bg-gray-800/30 p-3 rounded-lg border border-gray-700/50 relative">
-              <div className="flex justify-between items-center mb-1">
-                <ScoreDropdown scoreId="market-stability">
-                  <span className="text-xs text-gray-400">Market Stability</span>
-                </ScoreDropdown>
-                <span className="text-sm font-medium text-cyan-400">
-                  {mlAnalysis.features.marketStability}%
-                </span>
-              </div>
-              <Progress 
-                value={mlAnalysis.features.marketStability} 
-                className="h-1.5 bg-gray-700/50"
-              />
-            </div>
+            {featureRows.map((row) => {
+              const tone = safetyTone(row.value);
+              return (
+                <div key={row.id} className="bg-muted/20 p-3 rounded-lg border border-border/60 relative">
+                  <div className="flex justify-between items-center mb-1">
+                    <ScoreDropdown scoreId={row.id}>
+                      <span className="text-xs text-muted-foreground">{row.label}</span>
+                    </ScoreDropdown>
+                    <span className={`text-sm font-semibold ${tone.text}`}>{row.value}%</span>
+                  </div>
+                  <Progress value={row.value} className="h-1.5 bg-muted/50" indicatorClassName={tone.bar} />
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* Recommendations */}
         {mlAnalysis.recommendations.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-cyan-400 flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              AI Recommendations
+            <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Shield className="h-4 w-4 text-neon-cyan" />
+              What this means for you
             </h4>
             <div className="space-y-2">
               {mlAnalysis.recommendations.map((rec, index) => (
-                <div key={index} className="flex items-start gap-2 text-sm text-gray-300">
-                  <CheckCircle className="h-4 w-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+                <div key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <CheckCircle className="h-4 w-4 text-emerald-400 mt-0.5 flex-shrink-0" />
                   <span>{rec}</span>
                 </div>
               ))}
@@ -360,8 +319,8 @@ const MLAnalysisCard: React.FC<MLAnalysisCardProps> = ({ mlAnalysis, isLoading }
             </h4>
             <div className="space-y-2">
               {mlAnalysis.riskFactors.map((risk, index) => (
-                <div key={index} className="flex items-start gap-2 text-sm text-gray-300">
-                  <XCircle className="h-4 w-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                <div key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <XCircle className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
                   <span>{risk}</span>
                 </div>
               ))}

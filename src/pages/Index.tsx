@@ -9,8 +9,9 @@ import AnalysisReport from '@/components/AnalysisReport';
 import TokenStats from '@/components/TokenStats';
 import TutorialFAQ from '@/components/TutorialFAQ';
 import { toast } from 'sonner';
-import { Volume2, VolumeX, Shield } from 'lucide-react';
+import { Volume2, VolumeX, Shield, Send } from 'lucide-react';
 import { analyzeAddress } from '@/lib/reputexApi';
+import { TELEGRAM_BOT_URL } from '@/config/links';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -128,6 +129,17 @@ const Index = () => {
           </p>
 
           <AddressInput onSubmit={handleSubmit} isLoading={isLoading || isAutoDetecting} />
+
+          <a
+            href={TELEGRAM_BOT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center gap-2 mt-6 px-4 py-2 rounded-full border border-neon-cyan/40 bg-neon-cyan/5 text-sm text-neon-cyan hover:bg-neon-cyan/10 transition-colors"
+          >
+            <Send className="h-4 w-4" />
+            Prefer chat? Scan any token right inside Telegram
+            <span className="opacity-60 group-hover:translate-x-0.5 transition-transform">→</span>
+          </a>
         </section>
         
         <section className="container mx-auto">
