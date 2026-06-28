@@ -4,7 +4,7 @@
   "private": true,
   "description": "ReputeX AI backend — secure API gateway + genuine token risk scoring engine",
   "engines": {
-    "node": ">=18"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -29,6 +29,6 @@
     "@types/express": "^4.17.21",
     "@types/node": "^22.5.5",
     "tsx": "^4.19.2",
-    "typescript": "^5.5.3"
+    "typescript": "5.5.4"
   }
 }
